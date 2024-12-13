@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>TaskGenie Chat</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f5f7fa;
+            color: #1A1C1E;
+        }
+
+        #chat {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 100px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto 100px auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .msg {
+            padding: 24px 80px;
+            display: flex;
+            align-items: flex-start;
+            border-bottom: 1px solid rgba(229, 229, 229, 0.5);
+            line-height: 1.7;
+            transition: all 0.2s ease;
+        }
+
+        .msg:hover {
+            background-color: rgba(17, 162, 123, 0.03);
+        }
+
+        .msg pre {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-family: 'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace;
+            white-space: pre-wrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .msg code {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: 'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace;
+        }
+
+        .user {
+            background-color: white;
+        }
+
+        .bot {
+            background-color: #f8fafc;
+        }
+
+        .content {
+            flex-grow: 1;
+            margin-left: 20px;
+            white-space: pre-wrap;
+            font-size: 15px;
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .user .avatar {
+            background: linear-gradient(135deg, #6366f1, #5436DA);
+        }
+
+        .bot .avatar {
+            background: linear-gradient(135deg, #10b981, #11A27B);
+        }
+
+        #bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px 80px;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(229, 229, 229, 0.5);
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        #inputbox {
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        #input {
+            width: 100%;
+            padding: 16px 45px 16px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            line-height: 1.5;
+            resize: none;
+            height: 24px;
+            outline: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            background-color: white;
+        }
+
+        #input:focus {
+            border-color: #11A27B;
+            box-shadow: 0 0 0 3px rgba(17, 162, 123, 0.2);
+        }
+
+        #send {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 8px;
+            background: none;
+            border: none;
+            color: #11A27B;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: all 0.2s ease;
+        }
+
+        #send:hover {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        #dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+            max-width: 500px;
+            width: 90%;
+            animation: dialogFade 0.3s ease;
+        }
+
+        @keyframes dialogFade {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -48%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        #dialog h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 20px;
+            color: #1a202c;
+        }
+
+        #dialogContent pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+            backdrop-filter: blur(4px);
+            animation: overlayFade 0.3s ease;
+        }
+
+        @keyframes overlayFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .buttons {
+            margin-top: 24px;
+            text-align: right;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .confirm {
+            background: linear-gradient(135deg, #10b981, #11A27B);
+            color: white;
+            box-shadow: 0 2px 4px rgba(17, 162, 123, 0.2);
+        }
+
+        .confirm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(17, 162, 123, 0.3);
+        }
+
+        .cancel {
+            background: white;
+            border-color: #e2e8f0;
+            color: #1A1C1E;
+        }
+
+        .cancel:hover {
+            background: #f8fafc;
+            transform: translateY(-1px);
+        }
+
+        /* Calendar Styles */
+        .calendar-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #10b981, #11A27B);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            z-index: 1;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(17, 162, 123, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .calendar-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(17, 162, 123, 0.3);
+        }
+
+        .calendar-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            width: 95%;
+            max-width: 1400px;
+            height: 90vh;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 3;
+            overflow: hidden;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 32px;
+            border-bottom: 1px solid rgba(229, 229, 229, 0.5);
+            background: #f8fafc;
+        }
+
+        .calendar-header h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #1a202c;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 50px repeat(7, 1fr);
+            gap: 1px;
+            background: #e2e8f0;
+            height: calc(100% - 65px);
+            overflow-y: auto;
+        }
+
+        .time-column {
+            background: white;
+            padding: 8px;
+            text-align: right;
+            font-size: 12px;
+            color: #64748b;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .time-slot {
+            height: 60px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-right: 8px;
+            display: flex;
+        }
+
+        .calendar-day {
+            background: white;
+            position: relative;
+        }
+
+        .calendar-day-header {
+            font-weight: 500;
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .day-column {
+            display: grid;
+            grid-template-rows: repeat(24, 60px);
+        }
+
+        .calendar-event {
+            position: absolute;
+            left: 4px;
+            right: 4px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            z-index: 1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .calendar-event:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .event-task {
+            background: linear-gradient(135deg, #fff5f5, #ffe4e1);
+            border-left: 3px solid #ff6b6b;
+        }
+
+        .event-meeting {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-left: 3px solid #2196f3;
+        }
+
+        .today {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #11A27B;
+        }
+
+        .other-month {
+            background: #fafafa;
+            color: #a0aec0;
+        }
+
+        .auth-buttons {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1;
+        }
+
+        .login-btn, .logout-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #4285f4, #357abd);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(66, 133, 244, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .login-btn:hover, .logout-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(66, 133, 244, 0.3);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info span {
+            color: #4285f4;
+            font-weight: 500;
+            background: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .initial-auth {
+            display: flex;
+            gap: 12px;
+        }
+
+        .google-btn {
+            background: linear-gradient(135deg, #4285f4, #357abd);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-buttons">
+        {% if not user_name %}
+            <div class="initial-auth">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <button class="login-btn" onclick="continueAsGuest()">Continue as Guest</button>
+                    <button class="login-btn google-btn" onclick="window.location.href='/login'">Sign in with Google</button>
+                </div>
+            </div>
+        {% else %}
+            <div class="user-info">
+                <div style="display: flex; flex-direction: column; gap: 12px;"> 
+                    <span>{{ user_name }}</span>
+                    <button class="logout-btn" onclick="handleLogout();">Logout</button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div id="chat"></div>
+
+    <div id="bottom">
+        <div id="inputbox">
+            <textarea id="input" placeholder="Message TaskGenie..." rows="1"></textarea>
+            <button id="send">
+                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round"
+                    stroke-linejoin="round" height="20" width="20">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="overlay"></div>
+    <div id="dialog">
+        <h3>Confirm Action</h3>
+        <div id="dialogContent"></div>
+        <div class="buttons">
+            <button class="cancel" onclick="handleConfirm(false)">Cancel</button>
+            <button class="confirm" onclick="handleConfirm(true)">Confirm</button>
+        </div>
+    </div>
+
+    <button class="calendar-button" onclick="toggleCalendar()">📅 Calendar</button>
+
+    <div class="calendar-modal" id="calendarModal">
+        <div class="calendar-header">
+            <h2 id="calendarTitle">December 2024</h2>
+            <div class="calendar-nav">
+                <button class="cancel" onclick="prevWeek()">Previous Week</button>
+                <button class="confirm" onclick="nextWeek()">Next Week</button>
+                <button class="cancel" onclick="toggleCalendar()">Close</button>
+            </div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+    <script>
+        var gUserName = '{{ user_name }}';
+        var gAction = null;
+        var gDocument = null;
+
+        function addMsg(text, type) {
+            var chat = document.getElementById('chat');
+            var div = document.createElement('div');
+            div.className = 'msg ' + type;
+
+            var avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = type === 'user' ? 'U' : 'AI';
+
+            var content = document.createElement('div');
+            content.className = 'content';
+
+            // Handle markdown-style code blocks
+            var formattedText = text.replace(/```([\s\S]*?)```/g, function (match, code) {
+                return '<pre><code>' + code.trim() + '</code></pre>';
+            });
+
+            // Handle inline code
+            formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            content.innerHTML = formattedText;
+
+            div.appendChild(avatar);
+            div.appendChild(content);
+            chat.appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function adjustTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+        }
+
+        function showDialog(action, doc) {
+            gAction = action;
+            gDocument = doc;
+            document.getElementById('dialog').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('dialogContent').innerHTML =
+                '<pre>' + JSON.stringify(doc, null, 2) + '</pre>' +
+                '<p>Are you sure you want to proceed with this ' + action.toLowerCase() + '?</p>';
+        }
+
+        function handleConfirm(confirmed) {
+            document.getElementById('dialog').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+
+            if (!gAction || !gDocument) return;
+
+            fetch('/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_name: gUserName,
+                    action: gAction,
+                    confirmed: confirmed,
+                    document: gDocument
+                })
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    if (data.error) {
+                        addMsg(data.error, 'bot');
+                    } else {
+                        addMsg(data.message, 'bot');
+                    }
+                })
+                .catch(function (error) {
+                    addMsg('Error: ' + error.message, 'bot');
+                });
+
+            gAction = null;
+            gDocument = null;
+        }
+
+        function sendMessage() {
+            var input = document.getElementById('input');
+            var msg = input.value.trim();
+            if (!msg) return;
+
+            addMsg(msg, 'user');
+            input.value = '';
+            input.style.height = '24px';
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: msg
+                })
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    if (data.error) {
+                        addMsg(data.error, 'bot');
+                        return;
+                    }
+                    addMsg(data.message, 'bot');
+                    if (data.data && ['Schedule', 'Update', 'Delete'].includes(data.action)) {
+                        showDialog(data.action, data.data);
+                    }
+                })
+                .catch(function (error) {
+                    addMsg('Error: ' + error.message, 'bot');
+                });
+        }
+
+        window.onload = function () {
+            // Get user name from server-side template
+            var gUserName = '{{ user_name }}';
+            
+            // Show welcome message
+            addMsg(`Welcome ${gUserName}! How can I help you today?`, 'bot');
+
+            var input = document.getElementById('input');
+            
+            input.addEventListener('input', function () {
+                adjustTextarea(this);
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            document.getElementById('send').onclick = sendMessage;
+        };
+
+        let currentDate = new Date();
+        let displayedDate = new Date();
+
+        function toggleCalendar() {
+            var modal = document.getElementById('calendarModal');
+            var overlay = document.getElementById('overlay');
+            if (modal.style.display === 'none' || !modal.style.display) {
+                modal.style.display = 'block';
+                overlay.style.display = 'block';
+                refreshCalendar();
+            } else {
+                modal.style.display = 'none';
+                overlay.style.display = 'none';
+            }
+        }
+
+        function refreshCalendar() {
+            const startOfWeek = new Date(displayedDate);
+            startOfWeek.setDate(displayedDate.getDate() - displayedDate.getDay());
+            startOfWeek.setHours(0, 0, 0, 0);  // Set to start of day
+            
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 7);
+            endOfWeek.setHours(0, 0, 0, 0);  // Set to end of day
+
+            // Format dates in YYYY-MM-DD HH:MM:SS format
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            };
+
+            const startDateStr = formatDate(startOfWeek);
+            const endDateStr = formatDate(endOfWeek);
+
+            console.log('Sending dates:', { startDateStr, endDateStr });
+
+            fetch('/get_calendar_events', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_name: gUserName,
+                    start_date: startDateStr,
+                    end_date: endDateStr
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Received data:', data);
+                renderCalendar(data.events, data.tasks);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function renderCalendar(events, tasks) {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            // Update calendar title
+            const startOfWeek = new Date(displayedDate);
+            startOfWeek.setDate(displayedDate.getDate() - displayedDate.getDay());
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+            document.getElementById('calendarTitle').textContent = 
+                `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
+
+            // Add time column
+            const timeColumn = document.createElement('div');
+            timeColumn.className = 'time-column';
+            // Add empty header cell for alignment
+            const emptyHeader = document.createElement('div');
+            emptyHeader.className = 'calendar-day-header';
+            timeColumn.appendChild(emptyHeader);
+            // Add time slots
+            for (let hour = 0; hour < 25; hour++) {
+                const timeSlot = document.createElement('div');
+                timeSlot.className = 'time-slot';
+                timeSlot.textContent = `${hour.toString().padStart(2, '0')}:00`;
+                timeColumn.appendChild(timeSlot);
+            }
+            grid.appendChild(timeColumn);
+
+            // Add day columns
+            for (let i = 0; i < 7; i++) {
+                const currentDay = new Date(startOfWeek);
+                currentDay.setDate(startOfWeek.getDate() + i);
+
+                const dayColumn = document.createElement('div');
+                dayColumn.className = 'calendar-day';
+
+                // Add day header
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'calendar-day-header';
+                if (currentDay.toDateString() === new Date().toDateString()) {
+                    dayHeader.classList.add('today');
+                }
+                dayHeader.textContent = currentDay.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                dayColumn.appendChild(dayHeader);
+
+                // Add day grid
+                const dayGrid = document.createElement('div');
+                dayGrid.className = 'day-column';
+                for (let hour = 0; hour < 24; hour++) {
+                    const hourSlot = document.createElement('div');
+                    hourSlot.className = 'time-slot';
+                    dayGrid.appendChild(hourSlot);
+                }
+                dayColumn.appendChild(dayGrid);
+
+                // Add events with start and end times
+                events?.forEach(event => {
+                    const startTime = new Date(event['Start Time']);
+                    const endTime = new Date(event['End Time']);
+                    if (startTime.toDateString() === currentDay.toDateString()) {
+                        const eventDiv = document.createElement('div');
+                        eventDiv.className = 'calendar-event event-meeting';
+                        eventDiv.textContent = `${event.Title} (${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()})`;
+                        const startHour = startTime.getHours();
+                        const startMinutes = startTime.getMinutes();
+                        const duration = (endTime - startTime) / (1000 * 60); // Duration in minutes
+                        eventDiv.style.top = `${startHour * 60 + startMinutes + 24}px`; // Adjusted for header height
+                        eventDiv.style.height = `${duration}px`;
+                        dayColumn.appendChild(eventDiv);
+                    }
+                });
+
+                // Add tasks with start and end times
+                tasks?.forEach(task => {
+                    if (task['Start Time'] && task['End Time']) {
+                        const startTime = new Date(task['Start Time']);
+                        const endTime = new Date(task['End Time']);
+                        if (startTime.toDateString() === currentDay.toDateString()) {
+                            const taskDiv = document.createElement('div');
+                            taskDiv.className = 'calendar-event event-task';
+                            taskDiv.textContent = `${task.Title} (${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()})`;
+                            const startHour = startTime.getHours();
+                            const startMinutes = startTime.getMinutes();
+                            const duration = (endTime - startTime) / (1000 * 60); // Duration in minutes
+                            taskDiv.style.top = `${startHour * 60 + startMinutes + 24}px`; // Adjusted for header height
+                            taskDiv.style.height = `${duration}px`;
+                            dayColumn.appendChild(taskDiv);
+                        }
+                    }
+
+                    // Add task deadlines
+                    const dueDate = new Date(task['Due Date']);
+                    if (dueDate.toDateString() === currentDay.toDateString()) {
+                        const deadlineDiv = document.createElement('div');
+                        deadlineDiv.className = 'calendar-event event-deadline';
+                        deadlineDiv.textContent = `${task.Title} (Due: ${dueDate.toLocaleTimeString()})`;
+                        const dueHour = dueDate.getHours();
+                        const dueMinutes = dueDate.getMinutes();
+                        deadlineDiv.style.top = `${dueHour * 60 + dueMinutes + 24}px`; // Adjusted for header height
+                        deadlineDiv.style.height = '30px';
+                        dayColumn.appendChild(deadlineDiv);
+                    }
+                });
+
+                grid.appendChild(dayColumn);
+            }
+        }
+
+        function prevWeek() {
+            displayedDate.setDate(displayedDate.getDate() - 7);
+            refreshCalendar();
+        }
+
+        function nextWeek() {
+            displayedDate.setDate(displayedDate.getDate() + 7);
+            refreshCalendar();
+        }
+
+        function continueAsGuest() {
+            fetch('/continue_as_guest', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function handleLogout() {
+            fetch('/logout')
+                .then(response => {
+                    window.location.href = '/';
+                })
+                .catch(error => {
+                    console.error('Logout error:', error);
+                    window.location.href = '/';
+                });
+        }
+    </script>
+</body>
+
+</html>
