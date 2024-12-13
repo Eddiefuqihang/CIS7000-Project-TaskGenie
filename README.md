@@ -11,10 +11,9 @@ TaskGenie is an intelligent task management system that leverages OpenAI and Azu
 - Jupyter notebook for evaluation and testing
 
 ## Prerequisites
-- Python 3.8 or higher
-- MongoDB
-- OpenAI API access
-- Azure OpenAI API access
+- Python 3.10 or higher
+- MongoDB API access
+- OpenAI API access / Azure OpenAI API access
 
 ## Installation
 
@@ -22,11 +21,6 @@ TaskGenie is an intelligent task management system that leverages OpenAI and Azu
 ```bash
 git clone https://github.com/Eddiefuqihang/CIS7000-Project-TaskGenie.git
 cd CIS7000-Project-TaskGenie
-```
-
-2. Install required dependencies:
-```bash
-pip install -r requirements.txt
 ```
 
 ## Environment Setup
