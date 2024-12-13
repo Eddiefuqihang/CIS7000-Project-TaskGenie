@@ -101,8 +101,8 @@ CIS7000-Project-TaskGenie/
 ├── app.py                          # Flask application
 ├── taskgenie.py                    # Core TaskGenie functionality
 ├── requirements.txt                # Project dependencies
-├── CRUD Evaluation.ipynb          # Jupyter notebook for testing
-├── TaskGenie CRUD Evaluation.xlsx # Evaluation data
+├── CRUD Evaluation.ipynb           # Jupyter notebook for testing
+├── TaskGenie CRUD Evaluation.xlsx  # Evaluation data
 ├── .gitignore
 └── LICENSE
 ```
